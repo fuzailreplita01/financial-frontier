@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, getRedirectResult, UserCredential } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, getRedirectResult, UserCredential, setPersistence, browserSessionPersistence } from "firebase/auth";
 
+import { connectAuthEmulator } from "firebase/auth";
 // Log the environment variables (without exposing sensitive data)
 console.log("Firebase config check:", {
   hasApiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
@@ -22,49 +23,41 @@ if (!import.meta.env.VITE_FIREBASE_APP_ID) {
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  // authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
   messagingSenderId: import.meta.env.MESSAGING_SENDER_ID, // This is optional
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.MEASUREMENT_ID
+  measurementId: import.meta.env.MEASUREMENT_ID,
+  authDomain: "localhost:9099",
 };
 
 console.log("Initializing Firebase with domain:", `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`);
+console.log("VITE_FIREBASE_API_KEY:", import.meta.env.VITE_FIREBASE_API_KEY);
+console.log("VITE_FIREBASE_PROJECT_ID:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
+console.log("VITE_FIREBASE_APP_ID:", import.meta.env.VITE_FIREBASE_APP_ID);
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 auth.useDeviceLanguage(); // Use browser's language
+if (import.meta.env.MODE === "development") {
+  connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+}
 
-export const googleProvider = new GoogleAuthProvider();
-
-export { getRedirectResult };
-
-// Configure additional scopes for Google OAuth
-googleProvider.addScope('profile');
-googleProvider.addScope('email');
-
-// Set custom parameters
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
+// Set session persistence BEFORE sign-in
+setPersistence(auth, browserSessionPersistence)
+.then(() => {
+  console.log("✅ Firebase auth persistence set");
+})
+.catch((error) => {
+  console.error("❌ Error setting auth persistence:", error);
 });
 
-// getRedirectResult(auth)
-//   .then((result) => {
-//     if (result) {
-//       const credential = GoogleAuthProvider.credentialFromResult(result);
-//       const token = credential?.accessToken;
-//       const user = result.user;
-//       console.log(user, token)
-//     }
-//   }).catch((error) => {
-//     // // Handle Errors here.
-//     // const errorCode = error.code;
-//     // const errorMessage = error.message;
-//     // // The email of the user's account used.
-//     // const email = error.customData.email;
-//     // // The AuthCredential type that was used.
-//     // const credential = GoogleAuthProvider.credentialFromError(error);
-//     console.log(error)
-//   });
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope("profile");
+googleProvider.addScope("email");
+googleProvider.setCustomParameters({ prompt: "select_account", redirect_uri: "http://localhost:5000",
+});
+
+export { getRedirectResult };

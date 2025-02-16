@@ -16,7 +16,7 @@ import {
 export default function Dashboard() {
   const { currentUser, isAdmin, isAccountant } = useAuth();
   const { data: payments } = useQuery<Payment[]>({
-    queryKey: ["/api/payments", currentUser?.id],
+    queryKey: ["/api/payments", currentUser?.uid],
   });
 
   const monthlyData = payments?.reduce((acc, payment) => {
@@ -42,7 +42,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${payments?.reduce((sum, p) => sum + p.amount, 0) || 0}
+                ${payments?.reduce((sum, p) => sum + p.amount, 0) ?? 0}
               </div>
             </CardContent>
           </Card>
@@ -53,7 +53,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${payments?.[0]?.amount || 0}
+                ${payments?.[0]?.amount ?? 0}
               </div>
             </CardContent>
           </Card>

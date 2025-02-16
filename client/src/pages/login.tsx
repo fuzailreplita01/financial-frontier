@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getRedirectResult, signInWithRedirect } from "firebase/auth";
+import { setPersistence, browserSessionPersistence, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,35 +26,19 @@ export default function Login() {
     setIsLoading(true);
     try {
       console.log("Starting Google sign-in process...");
+
+      console.log("🟢 Setting Firebase auth persistence...");
+      await setPersistence(auth, browserSessionPersistence);
+
+      console.log("🟢 Starting Google sign-in redirect...");
       await signInWithRedirect(auth, googleProvider);
-      // User will be redirected to Google sign-in
-
-      // After the page redirects back
-      const userCred = await getRedirectResult(auth);
-      console.log(userCred)
+      
+      console.log("🔄 Redirecting to Google sign-in page...");
     } catch (error: any) {
-      console.error("Error signing in:", error);
-      console.error("Error details:", {
-        code: error.code,
-        message: error.message,
-        customData: error.customData,
-        name: error.name,
-      });
-
-      let errorMessage = "Could not sign in with Google. Please try again.";
-      if (error.code === "auth/configuration-not-found") {
-        errorMessage = "Please ensure you've added your domain to Firebase authorized domains.";
-      } else if (error.code === "auth/operation-not-allowed") {
-        errorMessage = "Google Sign-In is not enabled. Please enable it in Firebase Console under Authentication > Sign-in method.";
-      } else if (error.code === "auth/invalid-api-key") {
-        errorMessage = "Invalid Firebase configuration. Please check the API key.";
-      } else if (error.code === "auth/internal-error") {
-        errorMessage = `Internal Firebase error: ${error.message}. Please try again or contact support.`;
-      }
-
+      console.error("🔴 Error during sign-in redirect:", error);
       toast({
         title: "Login Failed",
-        description: errorMessage,
+        description: "Could not sign in with Google. Please try again.",
         variant: "destructive",
       });
     } finally {
